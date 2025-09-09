@@ -4,12 +4,14 @@ This repository contains the analysis code associated with diffraction-limited s
 Required software for image analysis:
 - FIJI https://imagej.net/software/fiji/downloads
 - FIJI plugin THUNDERSTORM https://zitmen.github.io/thunderstorm/
-- Python version 3
+- Python version 3 v (tested on 3.10.5)
+- the expected install time for these software is <1 hour
 
 Steps:
 1. The FIJI macro requires images to be organised Experiment folder -> subfolders containing images -> images. The macro will loop over all the image-containing folders in the Experiment folder
 2. After automated FIJI analysis is complete, data extraction can be performed using the python script provided. The index file must be included in the newly-created sub-folder of CSV file results (Created from THUNDERSTORM)
-3. The output is a compiled file for all THUNDERSTORM results from all images, as well as a summary file with mean spot numbers and intensities. 
+3. The output is a compiled file for all THUNDERSTORM results from all images, as well as a summary file with mean spot numbers and intensities.
+4. The expected runtime depends on the number of images being analysed, for one folder of 360 images takes approximately 1 hour. Data extraction takes <30 seconds
   
 Example dataset:
 - in the Images folder, raw single-molecule images were included, suitable to use with the accompanying analysis files
