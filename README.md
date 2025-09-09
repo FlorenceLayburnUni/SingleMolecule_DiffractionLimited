@@ -4,6 +4,7 @@ This repository contains the analysis code associated with diffraction-limited s
 Required software for image analysis:
 - FIJI https://imagej.net/software/fiji/downloads
 - FIJI plugin THUNDERSTORM https://zitmen.github.io/thunderstorm/
+- Python version 3
 
 Steps:
 1. The FIJI macro requires images to be organised Experiment folder -> subfolders containing images -> images. The macro will loop over all the image-containing folders in the Experiment folder
