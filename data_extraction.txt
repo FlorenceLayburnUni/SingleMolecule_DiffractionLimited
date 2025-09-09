@@ -1,0 +1,198 @@
+import os
+import subprocess
+import pandas as pd
+import re
+from tqdm import tqdm
+from os import walk
+import xlrd
+import shutil
+import xlrd
+import xlwt
+import xlsxwriter
+import numpy as np
+import openpyxl
+from pandas.errors import EmptyDataError
+from openpyxl import load_workbook
+
+
+##Make sure your folder of images is inside a folder. Use that directory as the rootdir 
+
+## Data extraction for automated without text Thunderstorm 
+## Generates a results summary with mean intensity and counts per folder
+## Also generates a all_data per folder
+## Generates a summary excel file with results from all folders 
+## Generates an all_data with results from all folders
+
+#Choose your folder of folders- your root folder
+rootdir = 'E://25_Sept//020925_ultraspin//' # Change this! Make sure it's forward slashes
+
+#First, make an empty list of subdirectories - the folders in your root folder.
+#Loop through the folders to identify the Results-containing folders.
+#Set this as the path to do the data extraction from, and identify the index file inside that folder
+subdirs = []
+for subdir, dirnames, filenames in os.walk(rootdir):
+    for dname in dirnames:
+        #if dname.endswith('Results_CD'):
+        if dname.endswith('Results_TS'):
+            path = subdir + '/' + dname
+            index = path + '/' +'index.xlsx'
+            
+            
+            #sets the final result file name (per folder) and the sheet name in the overall summary folder
+            filename =  dname[0:20] + '.xls'
+            sheetname = dname[7:20]
+            
+            #Creates a dictionary containing keys, the keys refer to a dataframe of data from the individual Excel sheets. 
+            #Sheet = None means all the sheets are read. Make an empty list for the sheets in this index folder. 
+            dfs = pd.read_excel(index,  header = None, index_col = None, sheet_name = None)
+            sheet_list = []
+
+            #Parse through the sheets in the Excel file, changing the dataframe to long instead of wide, removing the default index column
+            #Add the dataframes to a list of DF's
+            for key, value in dfs.items():
+                sheet = pd.melt(value, value_name = key).drop('variable', axis = 1) 
+                sheet_list.append(sheet)
+
+            #Combine the dataframes from the list
+            index1 = pd.concat(sheet_list, axis =1)
+            index1 = index1.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+            fovs = []
+            position = []
+            results = []
+            filelist=os.listdir(path)
+            for name in filelist:
+                if name.startswith('X'): #Use this if have 488 single channel
+                #if name.endswith('641.tifresults.csv'):
+                    results.append(name)
+                    fovs.append(name[:8])
+                    position.append(name[:4])
+
+            FOVnumber = position.count('X0Y0')
+            summary_df = pd.DataFrame()
+
+            count = []
+            intensity = []
+            alldata_dflist = []
+            for result in results:
+                result_path = path + '/' + result
+                resultname = result[:4]
+                fovname = result[:8]
+                try:
+                    if result.startswith('X'): # & result.endswith('641.tifresults.csv'): #remove second statement as needed
+                        df = pd.read_csv(result_path)
+                        if len(df) == 0:
+                            count.append(0)
+                            intensity.append(0)
+                        else:
+                            #A filter to remove low intensity spots
+                            #df = df.drop(df[df["intensity [photon]"] <54].index)
+                            df['Position'] = resultname
+                            df['FOV'] = fovname
+                            count.append(len(df))
+                            intensity.append(df["intensity [photon]"].mean())
+                            alldata_dflist.append(df)
+                except EmptyDataError:
+                    count.append(0)   
+                    intensity.append(0)   
+                except KeyError:
+                    intensity.append(0)
+            
+            
+            sample_types = ['PD', 'TBS', 'CON'] # remove if needed
+            
+            
+            def sample_type(row):
+                for s in sample_types:
+                    if s in row['Case']:
+                        return s
+                    
+            #all_data = pd.concat(alldata_dflist).drop(['Abs_frame'], axis = 1) 
+            all_data = pd.concat(alldata_dflist).drop(['frame', 'x [nm]', 'y [nm]', 'uncertainty [nm]', 'id', 'sigma [nm]'], axis = 1) 
+            all_data = all_data.rename(columns={'intensity [photon]': 'Intensity'})
+            all_data = index1.merge(all_data)
+            all_data  = all_data.sort_values(['FOV'])
+            all_data = all_data.astype({'Case': str})
+            all_data['Sample_Type'] = all_data.apply(sample_type, axis=1)
+            all_data['Intensity_Photons'] =  all_data['Intensity'].multiply(40) #because there are 40 frames and we average in FIJI
+            all_data.to_csv(path + '/all_data.csv', index = False)
+                       
+            #Set up the summary df per folder with mean Intensity and count
+            summary_df['Value']= count
+            summary_df['FOV'] = fovs
+            summary_df['Position'] = position
+            summary_df['Intensity'] = intensity
+            summary_df['Intensity_Photons'] = summary_df['Intensity'].multiply(40) #for 40 frames
+
+            summary_df = summary_df.fillna(value = 0)
+            summary_df = summary_df.sort_values(['FOV'])
+
+            summary_df= index1.merge(summary_df, how='right')
+            #summary_df.to_csv(path + '/ResultSummaryCD.csv')
+            summary_df.to_csv(path + '/ResultSummaryTS.csv')
+
+           # mean_df = (summary_df.groupby('Position', as_index=False)[['Value', 'Intensity']].mean()).merge(index1, how ='right')
+            mean_df = (index1).merge(summary_df.groupby('Position', as_index=False)[['Value', 'Intensity', 'Intensity_Photons']].mean(), how = 'right')
+
+            mean_df = mean_df.astype({'Case': str})
+            
+            sample_types = ['PD', 'TBS', 'CON']
+            
+            def sample_type(row):
+                for s in sample_types:
+                    if s in row['Case']:
+                        return s
+                
+            mean_df['Sample_Type'] = mean_df.apply(sample_type, axis=1)
+            mean_df = mean_df.drop(columns=['Position'])
+             
+            #Save summary_df to each folder in xlsx format
+            workbook = xlwt.Workbook()  
+            sheet = workbook.add_sheet(sheetname)
+
+            for z, value in enumerate(mean_df.columns):
+                sheet.write(0, z, value)
+
+            # Iterate over the data and write it out row by row
+            for x, y in mean_df.iterrows():
+                for z, value in enumerate(y):
+                    sheet.write(x + 1, z, value)
+            workbook.save(path + filename)
+
+#Compile all Summary_dfs into one summary file in root directory
+#writer = pd.ExcelWriter(rootdir + 'summaryCD.xlsx')  
+writer = pd.ExcelWriter(rootdir + dname[0:6] + '_summaryTS.xlsx')  
+#writer = pd.ExcelWriter(rootdir + 'summaryTS.xlsx')  
+for subdir, dirnames, filenames in os.walk(rootdir):
+    for dname in dirnames:
+        if not dname.endswith(('Results_TS', 'Results_CD')):
+            path2 = subdir + '/' + dname
+            files = os.listdir(path2)
+            for file in files:
+                if file.endswith('.xls'):
+                    resultsdf = pd.read_excel(path2 + '/' + file, index_col = None)
+                    sheetname = file[7:20]
+                    resultsdf.to_excel(writer, sheet_name = sheetname, index = False)  
+writer.close()
+
+#comment this out if not using alldata
+summaryalldata_dflist = []
+for result in results:
+                result_path = path + '/' + result
+                resultname = result[:4]
+                fovname = result[:8]
+
+
+for subdir, dirnames, filenames in os.walk(rootdir):
+    for dname in dirnames:
+        if  dname.endswith(('Results_TS')):
+            path3 = subdir + '/' + dname
+            files = os.listdir(path3)
+            for file in files:
+                if file.startswith('all_data'):
+                    sumall_datadf = pd.read_csv(path3 + '/' + file, index_col = None, dtype = 'str')
+                    summaryalldata_dflist.append(sumall_datadf)
+                
+summaryall_data = pd.concat(summaryalldata_dflist)              
+summaryall_data.to_csv(rootdir + '/' + dname[0:6] + '_all_data.csv', index = False)
+print('Done')  
