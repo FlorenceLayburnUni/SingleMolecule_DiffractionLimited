@@ -11,3 +11,6 @@ Steps:
 2. After automated FIJI analysis is complete, data extraction can be performed using the python script provided. The index file must be included in the newly-created sub-folder of CSV file results (Created from THUNDERSTORM)
 3. The output is a compiled file for all THUNDERSTORM results from all images, as well as a summary file with mean spot numbers and intensities. 
   
+Example dataset:
+- in the Images folder, raw single-molecule images were included, suitable to use with the accompanying analysis files
+- Note: use the index file in the "example_index" folder for these image sets
