@@ -16,5 +16,7 @@ Steps:
 Note: this analysis assumes that images are 50 frames. For different frame numbers, just edit the multiplication factor in data extraction to the desired number.
   
 Example dataset:
-- in the Images folder, raw single-molecule images were included, suitable to use with the accompanying analysis files
-- Note: use the index file in the "example_index" folder for these image sets
+- In the Images folder, raw single-molecule images were included, zip-compressed.
+- After extracting the images, put them in a sub-folder, ready to use with the FIJI script
+- After FIJI analysis is complete, copy the index file from the "example_index" folder
+- Updated the filepath in the python data extraction file to complete
