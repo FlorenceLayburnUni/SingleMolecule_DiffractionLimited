@@ -4,7 +4,7 @@ This repository contains the analysis code associated with diffraction-limited s
 Required software for image analysis:
 - FIJI https://imagej.net/software/fiji/downloads
 - FIJI plugin THUNDERSTORM https://zitmen.github.io/thunderstorm/
-- Python version 3 v (tested on 3.10.5)
+- Python version 3 (tested on v 3.10.5)
 - the expected install time for these software is <1 hour
 
 Steps:
