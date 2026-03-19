@@ -44,26 +44,40 @@ function MyFunction(j) {
 			open(subdir + File.separator + filelist[i]);
 			imagea = getTitle();
 			root = substring(imagea,0,11);
-			run("Z Project...", "start=10 projection=[Average Intensity]");
-			//run("Enhance Contrast", "saturated=0.35");
+			run("Z Project...", "start=10 projection=[Sum Slices]");
 			image1 = getTitle();
 			selectWindow(imagea);
 			close();
 			run("Run analysis", "filter=[Wavelet filter (B-Spline)] scale=2.0 order=3 detector=[Centroid of connected components] watershed=false threshold=2*std(Wave.F1) estimator=[PSF: Integrated Gaussian] sigma=1.6 fitradius=5 method=[Maximum likelihood] full_image_fitting=false mfaenabled=false renderer=[Scatter plot] dxforce=false magnification=10.0 dx=10.0 colorizez=false threed=false dzforce=false repaint=50");
-        	run("Export results", "filepath=loclist.csv fileformat=[CSV (comma separated)] sigma=true intensity=true chi2=false offset=false saveprotocol=true x=true y=true bkgstd=false id=true uncertainty=true frame=true detections=true");
+			svpath2 = svpath + "/"+ filelist[i] + "results.csv";         	
+			run("Export results", "filepath="+svpath2+" fileformat=[CSV (comma separated)] sigma=true intensity=true chi2=false offset=false saveprotocol=true x=true y=true bkgstd=false id=true uncertainty=true frame=true detections=true");
 			File.copy(fjpath+"loclist.csv", svpath+ "/"+ filelist[i] +"results.csv");
 			//close();
 			selectWindow("Scatter plot");
 			close();
-			//selectWindow(image1);
-			//close();
 			cleanUp();
-			//run("Set Scale...", "distance=1 known=0.154 unit=µm");
-			//run("Scale Bar...", "width=5 height=11 thickness=4 font=14 color=White background=None location=[Lower Right] horizontal bold hide overlay");
-			//run("Flatten");
-			//saveAs("tif", SBpath+ "/"+ root + "_auto.tif");
+			}
+		}
+	}
+
+if (endsWith(filelist[i], "488.tif")){ //this was included for two-colour analysis to calculate the chance colocalisation
+			open(subdir + File.separator + filelist[i]);
+			imagea = getTitle();
+			root = substring(imagea,0,11);
+			run("Z Project...", "start=10 projection=[Sum Slices]");
+			image1 = getTitle();
+			selectWindow(imagea);
+			close();
+			run("Rotate 90 Degrees Right");
+			run("Run analysis", "filter=[Wavelet filter (B-Spline)] scale=2.0 order=3 detector=[Centroid of connected components] watershed=false threshold=2*std(Wave.F1) estimator=[PSF: Integrated Gaussian] sigma=1.6 fitradius=5 method=[Maximum likelihood] full_image_fitting=false mfaenabled=false renderer=[Scatter plot] dxforce=false magnification=10.0 dx=10.0 colorizez=false threed=false dzforce=false repaint=50");
+        	svpath3 = svpath + "/"+ filelist[i] + "results_rotated.csv"; 
+			run("Export results", "filepath="+svpath3+" fileformat=[CSV (comma separated)] sigma=true intensity=true chi2=false offset=false saveprotocol=false x=true y=true bkgstd=false id=true uncertainty=true frame=true detections=true");
+			selectWindow("Scatter plot");
+			close();
+			cleanUp();
 			}
 		}
 	}
 
 print("All done");
+
