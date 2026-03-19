@@ -24,7 +24,7 @@ from openpyxl import load_workbook
 ## Generates an all_data with results from all folders
 
 #Choose your folder of folders- your root folder
-rootdir = 'E://25_Sept//020925_ultraspin//' # Change this! Make sure it's forward slashes
+rootdir = 'E://25_Sept//020925_experiment2//' # Change this! Make sure it's forward slashes
 
 #First, make an empty list of subdirectories - the folders in your root folder.
 #Loop through the folders to identify the Results-containing folders.
@@ -86,7 +86,6 @@ for subdir, dirnames, filenames in os.walk(rootdir):
                             intensity.append(0)
                         else:
                             #A filter to remove low intensity spots
-                            #df = df.drop(df[df["intensity [photon]"] <54].index)
                             df['Position'] = resultname
                             df['FOV'] = fovname
                             count.append(len(df))
@@ -114,7 +113,7 @@ for subdir, dirnames, filenames in os.walk(rootdir):
             all_data  = all_data.sort_values(['FOV'])
             all_data = all_data.astype({'Case': str})
             all_data['Sample_Type'] = all_data.apply(sample_type, axis=1)
-            all_data['Intensity_Photons'] =  all_data['Intensity'].multiply(40) #because there are 40 frames and we average in FIJI
+            all_data['Intensity_Photons'] =  all_data['Intensity']
             all_data.to_csv(path + '/all_data.csv', index = False)
                        
             #Set up the summary df per folder with mean Intensity and count
@@ -122,7 +121,7 @@ for subdir, dirnames, filenames in os.walk(rootdir):
             summary_df['FOV'] = fovs
             summary_df['Position'] = position
             summary_df['Intensity'] = intensity
-            summary_df['Intensity_Photons'] = summary_df['Intensity'].multiply(40) #for 40 frames
+            summary_df['Intensity_Photons'] = summary_df['Intensity']
 
             summary_df = summary_df.fillna(value = 0)
             summary_df = summary_df.sort_values(['FOV'])
